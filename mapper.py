@@ -15,9 +15,11 @@ from shapely.geometry import Point, Polygon
 from matplotlib.colors import TwoSlopeNorm
 
 
-#RTS = [150]
-RTS = [300,275,250,225,200,175,150,125,100,75]
-distance_threshold = 5
+RTS = [50] #total number of nodes
+MRE = 10 #MRE number of nodes
+INS = 10 #Inland state number of nodes
+# RTS = [300,275,250,225,200,175,150,125,100,75]
+distance_threshold = 80
 
 df_BAs = pd.read_csv('BA_data/BAs.csv',header=0)
 BAs = list(df_BAs['Name'])
@@ -319,16 +321,93 @@ gen_weights = gens/sum(gens)
 #Nodal reduction
 ##############################
 
+#Updating load dataframe
+df_load_upt = df_load.copy()
+df_load_upt.dropna(subset=['Load MW'], inplace=True)
+df_load_upt.index = df_load_upt['Number']
+
+#Finding coastal state nodes
+coast_states = ['Washington','Oregon','California']
+# coastal_nodes = 
+
+#Selecting highest demand nodes in inland states until specified inland nodes are reached
+inland_states = ['Idaho','Nevada','Arizona','Utah','New Mexico','Wyoming','Texas','Colorado','Montana']
+
+#Finding total demand at each state
+total_demand = []
+for i in inland_states:
+    
+    state_nodes = list(df_BA_states.loc[df_BA_states['State']==i,'Number'])
+    sum_demand = df_load_upt.loc[df_load_upt['Number'].isin(state_nodes)]['Load MW'].sum()
+    total_demand.append(sum_demand)
+
+state_demands = pd.DataFrame(list(zip(inland_states,total_demand)),columns=['State','Demand_MW'])
+state_demands_sort = state_demands.sort_values(by='Demand_MW',ascending=False).reset_index(drop=True)
+
 for NN in RTS:
 
-    #1 - put one demand node in each state/BA pairing (max node in each)
-    demand_nodes_selected = []
-    for k in keys:
-        idx = keys.index(k)
-        demand_nodes_selected.append(max_loads[idx])
+    #1 - Selecting highest demand nodes in inland states
+    inland_state_nodes = []
+    
+    #Finding highest load node in each inland state
+    for state in inland_states:
         
-    # #specify number of nodes
-    remaining_nodes = NN - len(demand_nodes_selected)
+        state_nodes = list(df_BA_states.loc[df_BA_states['State']==state,'Number'])
+        demand_nodes_sorted = df_load_upt.loc[df_load_upt['Number'].isin(state_nodes)].sort_values(by='Load MW',ascending=False)
+        highest_demand_node = demand_nodes_sorted['Load MW'].index[0]
+        inland_state_nodes.append(highest_demand_node)
+    
+    #Determining if any more nodes are needed, and selecting those nodes with respect to total demand of inland states one by one
+    #This process also selects highest load nodes in states but finds 2nd, 3rd, etc. highest load nodes in the states
+    remain_inland_nodes_num = INS - len(inland_state_nodes)
+    
+    if remain_inland_nodes_num > 0:
+        
+        for i in range(0,remain_inland_nodes_num):
+            
+            if i > 8:
+                factor = np.floor(i/9)
+                f = i-(factor*9)
+            else:
+                f = i
+                
+            selected_state = state_demands_sort.loc[f, 'State']
+            state_nodes = list(df_BA_states.loc[df_BA_states['State']==selected_state,'Number'])
+            demand_nodes_sorted = df_load_upt.loc[df_load_upt['Number'].isin(state_nodes)].sort_values(by='Load MW',ascending=False)
+            
+            for y in range(len(demand_nodes_sorted)):
+                
+                highest_demand_node = demand_nodes_sorted.index[y]
+                distances = []
+                
+                if highest_demand_node in inland_state_nodes:
+                    continue
+                else:
+                    
+                    LA = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Latitude'].values[0]
+                    LO = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Longitude'].values[0]
+                    T1 = tuple((LA,LO))
+                   
+                    for z in inland_state_nodes:
+                        
+                        a = filter_nodes.loc[filter_nodes['Number']==z,'Substation Latitude'].values[0]
+                        b = filter_nodes.loc[filter_nodes['Number']==z,'Substation Longitude'].values[0]
+                        T2 = tuple((a,b))
+                        
+                        dist = distance.distance(T1,T2).km
+                        distances.append(dist)
+                        
+                if any(x < distance_threshold for x in distances):
+                    continue
+                else:
+                    inland_state_nodes.append(highest_demand_node)
+                    break
+                
+    else:
+        pass
+                    
+    #Finding how many nodes are going to be selected for coastal states
+    remaining_nodes = NN - len(inland_state_nodes) - MRE
     g_N = int(np.floor(remaining_nodes*.33)) #generation nodes
     l_N = int(np.floor(remaining_nodes*.33)) #demand nodes
     t_N = int(np.floor(remaining_nodes*.33)) #transmission nodes
@@ -338,8 +417,8 @@ for NN in RTS:
     else:
         pass
     
-    #2 - allocate remaining demand nodes based on MW ranking of individual nodes
-    unallocated = [i for i in non_zero if i not in demand_nodes_selected]
+    #2 - allocate remaining demand nodes based on MW ranking of individual nodes in coastal states
+    unallocated = [i for i in non_zero if i not in inland_state_nodes]
     load_ranks = np.zeros((len(unallocated),2))
     
     for i in unallocated:
@@ -353,37 +432,46 @@ for NN in RTS:
     
     added = 0
     while l_N > 0:
-        
+      
         p = int(df_load_ranks.loc[added,'BusName'])
-        LA = filter_nodes.loc[filter_nodes['Number']==p,'Substation Latitude'].values[0]
-        LO = filter_nodes.loc[filter_nodes['Number']==p,'Substation Longitude'].values[0]
-        T1 = tuple((LA,LO))
         
-        trigger = 0
+        my_state = df_BA_states.loc[df_BA_states['Number']==p]['State'].values[0]
         
-        for d in demand_nodes_selected:
-            a = filter_nodes.loc[filter_nodes['Number']==d,'Substation Latitude'].values[0]
-            b = filter_nodes.loc[filter_nodes['Number']==d,'Substation Longitude'].values[0]
-            T2 = tuple((a,b))
+        if my_state in coast_states:
+        
+            LA = filter_nodes.loc[filter_nodes['Number']==p,'Substation Latitude'].values[0]
+            LO = filter_nodes.loc[filter_nodes['Number']==p,'Substation Longitude'].values[0]
+            T1 = tuple((LA,LO))
             
-            dist = distance.distance(T1,T2).km
+            trigger = 0
             
-            if dist < distance_threshold:
+            for d in inland_state_nodes:
+                a = filter_nodes.loc[filter_nodes['Number']==d,'Substation Latitude'].values[0]
+                b = filter_nodes.loc[filter_nodes['Number']==d,'Substation Longitude'].values[0]
+                T2 = tuple((a,b))
                 
-                trigger = 1
-        
-        if trigger > 0:
-            added += 1
-        else:
+                dist = distance.distance(T1,T2).km
+                
+                if dist < distance_threshold:
+                    
+                    trigger = 1
             
-            demand_nodes_selected.append(int(df_load_ranks.loc[added,'BusName']))
-            added += 1  
-            l_N += -1
+            if trigger > 0:
+                added += 1
+            else:
+                
+                inland_state_nodes.append(int(df_load_ranks.loc[added,'BusName']))
+                added += 1  
+                l_N += -1
+                
+        else:
+            added += 1
+            
     
     #3 - allocate generation based on reduced gens (screen for overlap)
     
     gen_nodes_selected = []
-    unallocated_gens = [i for i in reduced_gen_buses if i not in demand_nodes_selected]
+    unallocated_gens = [i for i in reduced_gen_buses if i not in inland_state_nodes]
     unallocated_caps = []
     for i in unallocated_gens:
         idx = reduced_gen_buses.index(i)
@@ -400,38 +488,46 @@ for NN in RTS:
     while g_N > 0:
            
         p = int(df_gen_ranks.loc[added,'BusName'])
-        LA = filter_nodes.loc[filter_nodes['Number']==p,'Substation Latitude'].values[0]
-        LO = filter_nodes.loc[filter_nodes['Number']==p,'Substation Longitude'].values[0]
-        T1 = tuple((LA,LO))
         
-        trigger = 0
+        my_state = df_BA_states.loc[df_BA_states['Number']==p]['State'].values[0]
         
-        N = gen_nodes_selected + demand_nodes_selected
+        if my_state in coast_states:
         
-        for d in N:
-            a = filter_nodes.loc[filter_nodes['Number']==d,'Substation Latitude'].values[0]
-            b = filter_nodes.loc[filter_nodes['Number']==d,'Substation Longitude'].values[0]
-            T2 = tuple((a,b))
+            LA = filter_nodes.loc[filter_nodes['Number']==p,'Substation Latitude'].values[0]
+            LO = filter_nodes.loc[filter_nodes['Number']==p,'Substation Longitude'].values[0]
+            T1 = tuple((LA,LO))
             
-            dist = distance.distance(T1,T2).km
+            trigger = 0
             
-            if dist < distance_threshold:
+            N = gen_nodes_selected + inland_state_nodes
+            
+            for d in N:
+                a = filter_nodes.loc[filter_nodes['Number']==d,'Substation Latitude'].values[0]
+                b = filter_nodes.loc[filter_nodes['Number']==d,'Substation Longitude'].values[0]
+                T2 = tuple((a,b))
                 
-                trigger = 1
-        
-        if trigger > 0:
-            added += 1
-        else:
+                dist = distance.distance(T1,T2).km
+                
+                if dist < distance_threshold:
+                    
+                    trigger = 1
             
-            gen_nodes_selected.append(int(df_gen_ranks.loc[added,'BusName']))
-            added += 1  
-            g_N += -1
+            if trigger > 0:
+                added += 1
+            else:
+                
+                gen_nodes_selected.append(int(df_gen_ranks.loc[added,'BusName']))
+                added += 1  
+                g_N += -1
+                
+        else:
+            added += 1
         
         
     
     #4 - allocate transmission nodes based on load as well (screen for overlap, make sure list is for >=345kV)
     trans_nodes_selected = []
-    unallocated_trans = [i for i in non_zero if i not in demand_nodes_selected]
+    unallocated_trans = [i for i in non_zero if i not in inland_state_nodes]
     unallocated_trans = [i for i in unallocated_trans if i not in gen_nodes_selected]
     
     load_ranks = np.zeros((len(unallocated_trans),2))
@@ -449,32 +545,40 @@ for NN in RTS:
     while t_N > 0:
     
         p = int(df_load_ranks.loc[added,'BusName'])
-        LA = filter_nodes.loc[filter_nodes['Number']==p,'Substation Latitude'].values[0]
-        LO = filter_nodes.loc[filter_nodes['Number']==p,'Substation Longitude'].values[0]
-        T1 = tuple((LA,LO))
         
-        trigger = 0
+        my_state = df_BA_states.loc[df_BA_states['Number']==p]['State'].values[0]
         
-        N = gen_nodes_selected + demand_nodes_selected + trans_nodes_selected
+        if my_state in coast_states:
         
-        for d in N:
-            a = filter_nodes.loc[filter_nodes['Number']==d,'Substation Latitude'].values[0]
-            b = filter_nodes.loc[filter_nodes['Number']==d,'Substation Longitude'].values[0]
-            T2 = tuple((a,b))
+            LA = filter_nodes.loc[filter_nodes['Number']==p,'Substation Latitude'].values[0]
+            LO = filter_nodes.loc[filter_nodes['Number']==p,'Substation Longitude'].values[0]
+            T1 = tuple((LA,LO))
             
-            dist = distance.distance(T1,T2).km
+            trigger = 0
             
-            if dist < distance_threshold:
+            N = gen_nodes_selected + inland_state_nodes + trans_nodes_selected
+            
+            for d in N:
+                a = filter_nodes.loc[filter_nodes['Number']==d,'Substation Latitude'].values[0]
+                b = filter_nodes.loc[filter_nodes['Number']==d,'Substation Longitude'].values[0]
+                T2 = tuple((a,b))
                 
-                trigger = 1
-        
-        if trigger > 0:
-            added += 1
-        else:
+                dist = distance.distance(T1,T2).km
+                
+                if dist < distance_threshold:
+                    
+                    trigger = 1
             
-            trans_nodes_selected.append(int(df_load_ranks.loc[added,'BusName']))
-            added += 1  
-            t_N += -1
+            if trigger > 0:
+                added += 1
+            else:
+                
+                trans_nodes_selected.append(int(df_load_ranks.loc[added,'BusName']))
+                added += 1  
+                t_N += -1
+                
+        else:
+            added += 1
         
     # # plot (unique colors, and combos)
     
@@ -486,7 +590,7 @@ for NN in RTS:
     G_NODES = nodes_df[nodes_df['Number'].isin(gen_nodes_selected)]
     G_NODES.plot(ax=ax,color = 'deepskyblue',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)
     
-    D_NODES = nodes_df[nodes_df['Number'].isin(demand_nodes_selected)]
+    D_NODES = nodes_df[nodes_df['Number'].isin(inland_state_nodes)]
     D_NODES.plot(ax=ax,color = 'deeppink',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)
     
     T_NODES = nodes_df[nodes_df['Number'].isin(trans_nodes_selected)]
@@ -496,7 +600,7 @@ for NN in RTS:
     ax.set_xlim(-2000000,0)
     ax.set_ylim([-1750000,750000])
     plt.axis('off')
-    # plt.savefig('draft_topology.jpg',dpi=330)
+    plt.savefig('draft_topology.jpg',dpi=330)
     
     
     #SO-CAL
@@ -513,7 +617,7 @@ for NN in RTS:
     ax.set_xlim(-1800000,-1100000)
     ax.set_ylim([-1400000,-700000])
     plt.axis('off')
-    # plt.savefig('SOCAL_topology.jpg',dpi=330)
+    plt.savefig('SOCAL_topology.jpg',dpi=330)
     
     
     #Mid-C
@@ -530,7 +634,7 @@ for NN in RTS:
     ax.set_xlim(-2000000,-1000000)
     ax.set_ylim([0,750000])
     plt.axis('off')
-    # plt.savefig('MIDC_topology.jpg',dpi=330)
+    plt.savefig('MIDC_topology.jpg',dpi=330)
     
     
     #SF Bay Area
@@ -548,9 +652,9 @@ for NN in RTS:
     ax.set_xlim(-2000000,-1500000)
     ax.set_ylim([-750000,0])
     plt.axis('off')
-    # plt.savefig('SF_topology.jpg',dpi=330)
+    plt.savefig('SF_topology.jpg',dpi=330)
     
-    selected_nodes = demand_nodes_selected + gen_nodes_selected + trans_nodes_selected
+    selected_nodes = inland_state_nodes + gen_nodes_selected + trans_nodes_selected
     
     df = pd.read_csv('10k_topology_files/10k_load.csv',header=0)
     full = list(df['Number'])
