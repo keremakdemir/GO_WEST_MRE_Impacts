@@ -360,12 +360,13 @@ for NN in RTS:
             highest_demand_node = demand_nodes_sorted['Load MW'].index[i]
             my_distances = []
             
-            if highest_demand_node in inland_state_nodes:
+            if len(inland_state_nodes) == 0:
+                inland_state_nodes.append(highest_demand_node)
+                break
+            
+            elif highest_demand_node in inland_state_nodes:
                 continue
             
-            elif len(inland_state_nodes) == 0:
-                inland_state_nodes.append(highest_demand_node)
-                
             else:
                 LA = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Latitude'].values[0]
                 LO = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Longitude'].values[0]
