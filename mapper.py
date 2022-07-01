@@ -354,9 +354,38 @@ for NN in RTS:
         
         state_nodes = list(df_BA_states.loc[df_BA_states['State']==state,'Number'])
         demand_nodes_sorted = df_load_upt.loc[df_load_upt['Number'].isin(state_nodes)].sort_values(by='Load MW',ascending=False)
-        highest_demand_node = demand_nodes_sorted['Load MW'].index[0]
-        inland_state_nodes.append(highest_demand_node)
-    
+
+        for i in range(len(demand_nodes_sorted)):
+
+            highest_demand_node = demand_nodes_sorted['Load MW'].index[i]
+            my_distances = []
+            
+            if highest_demand_node in inland_state_nodes:
+                continue
+            
+            elif len(inland_state_nodes) == 0:
+                inland_state_nodes.append(highest_demand_node)
+                
+            else:
+                LA = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Latitude'].values[0]
+                LO = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Longitude'].values[0]
+                T1 = tuple((LA,LO))
+                
+                for z in inland_state_nodes:
+                    
+                    a = filter_nodes.loc[filter_nodes['Number']==z,'Substation Latitude'].values[0]
+                    b = filter_nodes.loc[filter_nodes['Number']==z,'Substation Longitude'].values[0]
+                    T2 = tuple((a,b))
+                    
+                    my_dist = distance.distance(T1,T2).km
+                    my_distances.append(my_dist)
+            
+            if any(x < distance_threshold for x in my_distances):
+                continue
+            else:
+                inland_state_nodes.append(highest_demand_node)
+                break
+        
     #Determining if any more nodes are needed, and selecting those nodes with respect to total demand of inland states one by one
     #This process also selects highest load nodes in states but finds 2nd, 3rd, etc. highest load nodes in the states
     remain_inland_nodes_num = INS - len(inland_state_nodes)
@@ -579,82 +608,94 @@ for NN in RTS:
                 
         else:
             added += 1
+    
+    #Adding selected MRE nodes
+    MRE_selected_nodes = [10006,10003,13026,13022,13012,13003,20007,20003,20012,21004]
         
     # # plot (unique colors, and combos)
     
     fig,ax = plt.subplots()
     states_gdf.plot(ax=ax,color='white',edgecolor='black',linewidth=0.5)
-    nodes_df.plot(ax=ax,color = 'lightgray',alpha=1)
+    # nodes_df.plot(ax=ax,color = 'lightgray',alpha=1)
     M=18
     
     G_NODES = nodes_df[nodes_df['Number'].isin(gen_nodes_selected)]
-    G_NODES.plot(ax=ax,color = 'deepskyblue',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)
+    G_NODES.plot(ax=ax,color = 'deepskyblue',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='Generator Nodes')
     
     D_NODES = nodes_df[nodes_df['Number'].isin(inland_state_nodes)]
-    D_NODES.plot(ax=ax,color = 'deeppink',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)
+    D_NODES.plot(ax=ax,color = 'deeppink',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='Demand Nodes')
     
     T_NODES = nodes_df[nodes_df['Number'].isin(trans_nodes_selected)]
-    T_NODES.plot(ax=ax,color = 'limegreen',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)   
+    T_NODES.plot(ax=ax,color = 'limegreen',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='Transmission Nodes') 
+    
+    MRE_NODES = nodes_df[nodes_df['Number'].isin(MRE_selected_nodes)]
+    MRE_NODES.plot(ax=ax,color = 'darkviolet',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='MRE Nodes')
     
     ax.set_box_aspect(1)
     ax.set_xlim(-2000000,0)
     ax.set_ylim([-1750000,750000])
     plt.axis('off')
-    plt.savefig('draft_topology.jpg',dpi=330)
+    fig.legend(loc='center', bbox_to_anchor=(0.5, -0.12), ncol=2, bbox_transform=ax.transAxes, fontsize=7)
+    plt.savefig('draft_topology.jpg',dpi=330, bbox_inches='tight')
     
     
     #SO-CAL
     fig,ax = plt.subplots()
     states_gdf.plot(ax=ax,color='white',edgecolor='black',linewidth=0.5)
-    nodes_df.plot(ax=ax,color = 'lightgray',alpha=1)
+    # nodes_df.plot(ax=ax,color = 'lightgray',alpha=1)
     M=18
     
-    G_NODES.plot(ax=ax,color = 'deepskyblue',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)
-    D_NODES.plot(ax=ax,color = 'deeppink',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)
-    T_NODES.plot(ax=ax,color = 'limegreen',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)   
+    G_NODES.plot(ax=ax,color = 'deepskyblue',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='Generator Nodes')
+    D_NODES.plot(ax=ax,color = 'deeppink',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='Demand Nodes')
+    T_NODES.plot(ax=ax,color = 'limegreen',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='Transmission Nodes')   
+    MRE_NODES.plot(ax=ax,color = 'darkviolet',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='MRE Nodes')
     
     ax.set_box_aspect(1)
     ax.set_xlim(-1800000,-1100000)
     ax.set_ylim([-1400000,-700000])
     plt.axis('off')
-    plt.savefig('SOCAL_topology.jpg',dpi=330)
+    fig.legend(loc='center', bbox_to_anchor=(0.5, -0.12), ncol=2, bbox_transform=ax.transAxes, fontsize=7)
+    plt.savefig('SOCAL_topology.jpg',dpi=330, bbox_inches='tight')
     
     
     #Mid-C
     fig,ax = plt.subplots()
     states_gdf.plot(ax=ax,color='white',edgecolor='black',linewidth=0.5)
-    nodes_df.plot(ax=ax,color = 'lightgray',alpha=1)
+    # nodes_df.plot(ax=ax,color = 'lightgray',alpha=1)
     M=18
     
-    G_NODES.plot(ax=ax,color = 'deepskyblue',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)
-    D_NODES.plot(ax=ax,color = 'deeppink',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)
-    T_NODES.plot(ax=ax,color = 'limegreen',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)   
+    G_NODES.plot(ax=ax,color = 'deepskyblue',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='Generator Nodes')
+    D_NODES.plot(ax=ax,color = 'deeppink',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='Demand Nodes')
+    T_NODES.plot(ax=ax,color = 'limegreen',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='Transmission Nodes')   
+    MRE_NODES.plot(ax=ax,color = 'darkviolet',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='MRE Nodes')
     
     ax.set_box_aspect(1)
     ax.set_xlim(-2000000,-1000000)
     ax.set_ylim([0,750000])
     plt.axis('off')
-    plt.savefig('MIDC_topology.jpg',dpi=330)
+    fig.legend(loc='center', bbox_to_anchor=(0.5, -0.12), ncol=2, bbox_transform=ax.transAxes, fontsize=7)
+    plt.savefig('MIDC_topology.jpg',dpi=330, bbox_inches='tight')
     
     
     #SF Bay Area
     fig,ax = plt.subplots()
     states_gdf.plot(ax=ax,color='white',edgecolor='black',linewidth=0.5)
-    nodes_df.plot(ax=ax,color = 'lightgray',alpha=1)
+    # nodes_df.plot(ax=ax,color = 'lightgray',alpha=1)
     M=18
     
-    G_NODES.plot(ax=ax,color = 'deepskyblue',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)
-    D_NODES.plot(ax=ax,color = 'deeppink',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)
-    T_NODES.plot(ax=ax,color = 'limegreen',markersize=M,alpha=1,edgecolor='black',linewidth=0.3)   
-  
+    G_NODES.plot(ax=ax,color = 'deepskyblue',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='Generator Nodes')
+    D_NODES.plot(ax=ax,color = 'deeppink',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='Demand Nodes')
+    T_NODES.plot(ax=ax,color = 'limegreen',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='Transmission Nodes')   
+    MRE_NODES.plot(ax=ax,color = 'darkviolet',markersize=M,alpha=1,edgecolor='black',linewidth=0.3, label='MRE Nodes')
     
     ax.set_box_aspect(1)
     ax.set_xlim(-2000000,-1500000)
     ax.set_ylim([-750000,0])
     plt.axis('off')
-    plt.savefig('SF_topology.jpg',dpi=330)
+    fig.legend(loc='center', bbox_to_anchor=(0.5, -0.12), ncol=2, bbox_transform=ax.transAxes, fontsize=7)
+    plt.savefig('SF_topology.jpg',dpi=330, bbox_inches='tight')
     
-    selected_nodes = inland_state_nodes + gen_nodes_selected + trans_nodes_selected
+    selected_nodes = inland_state_nodes + gen_nodes_selected + trans_nodes_selected + MRE_selected_nodes
     
     df = pd.read_csv('10k_topology_files/10k_load.csv',header=0)
     full = list(df['Number'])
