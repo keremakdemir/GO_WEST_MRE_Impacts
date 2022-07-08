@@ -15,11 +15,12 @@ from shapely.geometry import Point, Polygon
 from matplotlib.colors import TwoSlopeNorm
 
 
-RTS = [50] #total number of nodes
+RTS = [68] #total number of nodes
 MRE = 10 #MRE number of nodes
 INS = 10 #Inland state number of nodes
 # RTS = [300,275,250,225,200,175,150,125,100,75]
-distance_threshold = 80
+distance_threshold = 30
+distance_threshold2 = 80
 
 df_BAs = pd.read_csv('BA_data/BAs.csv',header=0)
 BAs = list(df_BAs['Name'])
@@ -326,116 +327,130 @@ df_load_upt = df_load.copy()
 df_load_upt.dropna(subset=['Load MW'], inplace=True)
 df_load_upt.index = df_load_upt['Number']
 
-#Finding coastal state nodes
+#Listing all states
 coast_states = ['Washington','Oregon','California']
-# coastal_nodes = 
-
-#Selecting highest demand nodes in inland states until specified inland nodes are reached
 inland_states = ['Idaho','Nevada','Arizona','Utah','New Mexico','Wyoming','Texas','Colorado','Montana']
 
-#Finding total demand at each state
-total_demand = []
-for i in inland_states:
+# #Finding total demand at each state
+# total_demand = []
+# for i in inland_states:
     
-    state_nodes = list(df_BA_states.loc[df_BA_states['State']==i,'Number'])
-    sum_demand = df_load_upt.loc[df_load_upt['Number'].isin(state_nodes)]['Load MW'].sum()
-    total_demand.append(sum_demand)
+#     state_nodes = list(df_BA_states.loc[df_BA_states['State']==i,'Number'])
+#     sum_demand = df_load_upt.loc[df_load_upt['Number'].isin(state_nodes)]['Load MW'].sum()
+#     total_demand.append(sum_demand)
 
-state_demands = pd.DataFrame(list(zip(inland_states,total_demand)),columns=['State','Demand_MW'])
-state_demands_sort = state_demands.sort_values(by='Demand_MW',ascending=False).reset_index(drop=True)
+# state_demands = pd.DataFrame(list(zip(inland_states,total_demand)),columns=['State','Demand_MW'])
+# state_demands_sort = state_demands.sort_values(by='Demand_MW',ascending=False).reset_index(drop=True)
 
 for NN in RTS:
-
-    #1 - Selecting highest demand nodes in inland states
-    inland_state_nodes = []
     
-    #Finding highest load node in each inland state
-    for state in inland_states:
+    #Adding selected MRE nodes
+    MRE_selected_nodes = [10006,10003,13026,13022,13012,13003,20007,20003,20012,21004]
+    
+    #1 - Selecting highest demand nodes in each BA
+    inland_state_nodes = []
+    my_BAS = []
+    #Finding highest load node in each BA
+    for BA_sp in BAs:
         
-        state_nodes = list(df_BA_states.loc[df_BA_states['State']==state,'Number'])
-        demand_nodes_sorted = df_load_upt.loc[df_load_upt['Number'].isin(state_nodes)].sort_values(by='Load MW',ascending=False)
+        updated_df_BA = df_BA_states[~df_BA_states['Number'].isin(MRE_selected_nodes)]
+        BA_demand_nodes = list(updated_df_BA.loc[updated_df_BA['NAME']==BA_sp,'Number'])
+        demand_nodes_sorted = df_load_upt.loc[df_load_upt['Number'].isin(BA_demand_nodes)].sort_values(by='Load MW',ascending=False)
 
         for i in range(len(demand_nodes_sorted)):
 
             highest_demand_node = demand_nodes_sorted['Load MW'].index[i]
+            my_state = df_BA_states.loc[df_BA_states['Number']==highest_demand_node]['State'].values[0]
             my_distances = []
             
             if len(inland_state_nodes) == 0:
                 inland_state_nodes.append(highest_demand_node)
+                my_BAS.append(BA_sp)
                 break
             
             elif highest_demand_node in inland_state_nodes:
                 continue
             
             else:
-                LA = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Latitude'].values[0]
-                LO = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Longitude'].values[0]
-                T1 = tuple((LA,LO))
                 
-                for z in inland_state_nodes:
+                if BA_sp == 'WESTERN AREA POWER ADMINISTRATION - ROCKY MOUNTAIN REGION':
                     
-                    a = filter_nodes.loc[filter_nodes['Number']==z,'Substation Latitude'].values[0]
-                    b = filter_nodes.loc[filter_nodes['Number']==z,'Substation Longitude'].values[0]
-                    T2 = tuple((a,b))
+                    if my_state == 'Wyoming':
+                        
+                        LA = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Latitude'].values[0]
+                        LO = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Longitude'].values[0]
+                        T1 = tuple((LA,LO))
+                        
+                        for z in inland_state_nodes:
+                            
+                            a = filter_nodes.loc[filter_nodes['Number']==z,'Substation Latitude'].values[0]
+                            b = filter_nodes.loc[filter_nodes['Number']==z,'Substation Longitude'].values[0]
+                            T2 = tuple((a,b))
+                            
+                            my_dist = distance.distance(T1,T2).km
+                            my_distances.append(my_dist)
                     
-                    my_dist = distance.distance(T1,T2).km
-                    my_distances.append(my_dist)
-            
-            if any(x < distance_threshold for x in my_distances):
-                continue
-            else:
-                inland_state_nodes.append(highest_demand_node)
-                break
+                        if any(x < distance_threshold for x in my_distances):
+                            continue
+                        else:
+                            inland_state_nodes.append(highest_demand_node)
+                            my_BAS.append(BA_sp)
+                            break
+                    
+                    else:
+                        continue 
+                    
+                elif BA_sp == 'PUBLIC SERVICE COMPANY OF NEW MEXICO':
+                    
+                    if my_state == 'New Mexico':
+                        
+                        LA = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Latitude'].values[0]
+                        LO = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Longitude'].values[0]
+                        T1 = tuple((LA,LO))
+                        
+                        for z in inland_state_nodes:
+                            
+                            a = filter_nodes.loc[filter_nodes['Number']==z,'Substation Latitude'].values[0]
+                            b = filter_nodes.loc[filter_nodes['Number']==z,'Substation Longitude'].values[0]
+                            T2 = tuple((a,b))
+                            
+                            my_dist = distance.distance(T1,T2).km
+                            my_distances.append(my_dist)
+                    
+                        if any(x < distance_threshold for x in my_distances):
+                            continue
+                        else:
+                            inland_state_nodes.append(highest_demand_node)
+                            my_BAS.append(BA_sp)
+                            break
+                        
+                    else:
+                        continue 
         
-    #Determining if any more nodes are needed, and selecting those nodes with respect to total demand of inland states one by one
-    #This process also selects highest load nodes in states but finds 2nd, 3rd, etc. highest load nodes in the states
-    remain_inland_nodes_num = INS - len(inland_state_nodes)
-    
-    if remain_inland_nodes_num > 0:
-        
-        for i in range(0,remain_inland_nodes_num):
-            
-            if i > 8:
-                factor = np.floor(i/9)
-                f = i-(factor*9)
-            else:
-                f = i
+                else: 
                 
-            selected_state = state_demands_sort.loc[f, 'State']
-            state_nodes = list(df_BA_states.loc[df_BA_states['State']==selected_state,'Number'])
-            demand_nodes_sorted = df_load_upt.loc[df_load_upt['Number'].isin(state_nodes)].sort_values(by='Load MW',ascending=False)
-            
-            for y in range(len(demand_nodes_sorted)):
-                
-                highest_demand_node = demand_nodes_sorted.index[y]
-                distances = []
-                
-                if highest_demand_node in inland_state_nodes:
-                    continue
-                else:
-                    
                     LA = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Latitude'].values[0]
                     LO = filter_nodes.loc[filter_nodes['Number']==highest_demand_node,'Substation Longitude'].values[0]
                     T1 = tuple((LA,LO))
-                   
+                    
                     for z in inland_state_nodes:
                         
                         a = filter_nodes.loc[filter_nodes['Number']==z,'Substation Latitude'].values[0]
                         b = filter_nodes.loc[filter_nodes['Number']==z,'Substation Longitude'].values[0]
                         T2 = tuple((a,b))
                         
-                        dist = distance.distance(T1,T2).km
-                        distances.append(dist)
-                        
-                if any(x < distance_threshold for x in distances):
-                    continue
-                else:
-                    inland_state_nodes.append(highest_demand_node)
-                    break
+                        my_dist = distance.distance(T1,T2).km
+                        my_distances.append(my_dist)
                 
-    else:
-        pass
-                    
+                    if any(x < distance_threshold for x in my_distances):
+                        continue
+                    else:
+                        inland_state_nodes.append(highest_demand_node)
+                        my_BAS.append(BA_sp)
+                        break
+    
+    nodes_to_avoid = MRE_selected_nodes + inland_state_nodes
+    
     #Finding how many nodes are going to be selected for coastal states
     remaining_nodes = NN - len(inland_state_nodes) - MRE
     g_N = int(np.floor(remaining_nodes*.33)) #generation nodes
@@ -448,7 +463,7 @@ for NN in RTS:
         pass
     
     #2 - allocate remaining demand nodes based on MW ranking of individual nodes in coastal states
-    unallocated = [i for i in non_zero if i not in inland_state_nodes]
+    unallocated = [i for i in non_zero if i not in nodes_to_avoid]
     load_ranks = np.zeros((len(unallocated),2))
     
     for i in unallocated:
@@ -482,7 +497,7 @@ for NN in RTS:
                 
                 dist = distance.distance(T1,T2).km
                 
-                if dist < distance_threshold:
+                if dist < distance_threshold2:
                     
                     trigger = 1
             
@@ -501,7 +516,7 @@ for NN in RTS:
     #3 - allocate generation based on reduced gens (screen for overlap)
     
     gen_nodes_selected = []
-    unallocated_gens = [i for i in reduced_gen_buses if i not in inland_state_nodes]
+    unallocated_gens = [i for i in reduced_gen_buses if i not in nodes_to_avoid]
     unallocated_caps = []
     for i in unallocated_gens:
         idx = reduced_gen_buses.index(i)
@@ -538,7 +553,7 @@ for NN in RTS:
                 
                 dist = distance.distance(T1,T2).km
                 
-                if dist < distance_threshold:
+                if dist < distance_threshold2:
                     
                     trigger = 1
             
@@ -557,7 +572,7 @@ for NN in RTS:
     
     #4 - allocate transmission nodes based on load as well (screen for overlap, make sure list is for >=345kV)
     trans_nodes_selected = []
-    unallocated_trans = [i for i in non_zero if i not in inland_state_nodes]
+    unallocated_trans = [i for i in non_zero if i not in nodes_to_avoid]
     unallocated_trans = [i for i in unallocated_trans if i not in gen_nodes_selected]
     
     load_ranks = np.zeros((len(unallocated_trans),2))
@@ -595,7 +610,7 @@ for NN in RTS:
                 
                 dist = distance.distance(T1,T2).km
                 
-                if dist < distance_threshold:
+                if dist < distance_threshold2:
                     
                     trigger = 1
             
@@ -610,8 +625,7 @@ for NN in RTS:
         else:
             added += 1
     
-    #Adding selected MRE nodes
-    MRE_selected_nodes = [10006,10003,13026,13022,13012,13003,20007,20003,20012,21004]
+    
         
     # # plot (unique colors, and combos)
     
@@ -712,3 +726,7 @@ for NN in RTS:
     df_selected_nodes.columns = ['SelectedNodes']
     f = 'Selected_nodes/selected_nodes_' + str(NN) + '.csv'
     df_selected_nodes.to_csv(f,index=None)
+    
+    all_selected_BAs = list(df_BA_states.loc[df_BA_states['Number'].isin(selected_nodes)]['NAME'].values)
+    print('Number of included BAs = {}'.format(len(set(all_selected_BAs))))
+    
