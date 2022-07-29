@@ -63,6 +63,19 @@ for i in sites:
 
 df_solar = df_solar.drop(columns=empty)
 
+##hourly ts of dispatchable wave-power at each plant
+df_wave = pd.read_csv('nodal_wave.csv',header=0)   
+
+empty = []
+sites = list(df_wave.columns)
+for i in sites:
+    if sum(df_wave[i]) > 0:
+        pass
+    else:
+        empty.append(i)
+
+df_wave = df_wave.drop(columns=empty)
+
 ##
 ##hourly ts of dispatchable wind-power at each plant
 df_wind = pd.read_csv('nodal_wind.csv',header=0)
@@ -165,6 +178,16 @@ with open(''+str(data_name)+'.dat', 'w') as f:
     # pull relevant generators
     for gen in range(0,len(df_gen)):
         if df_gen.loc[gen,'typ'] == 'solar':
+            unit_name = df_gen.loc[gen,'name']
+            unit_name = unit_name.replace(' ','_')
+            f.write(unit_name + ' ')
+    f.write(';\n\n') 
+    
+    # Wave
+    f.write('set Wave :=\n')
+    # pull relevant generators
+    for gen in range(0,len(df_gen)):
+        if df_gen.loc[gen,'typ'] == 'wave':
             unit_name = df_gen.loc[gen,'name']
             unit_name = unit_name.replace(' ','_')
             f.write(unit_name + ' ')
@@ -280,7 +303,7 @@ with open(''+str(data_name)+'.dat', 'w') as f:
 ######               Segment A.9                       ########
 ######=================================================########
 
-####### Hourly timeseries (load, hydro, solar, wind, reserve)
+####### Hourly timeseries (load, hydro, solar, wind, wave, reserve)
     
     # load (hourly)
     f.write('param:' + '\t' + 'SimDemand:=' + '\n')      
@@ -291,7 +314,7 @@ with open(''+str(data_name)+'.dat', 'w') as f:
     
     print('load')
     
-    # wind and solar (hourly)
+    # wind, solar and wave (hourly)
     f.write('param:' + '\t' + 'SimSolar:=' + '\n')
     s_gens = df_solar.columns
     for z in s_gens:
@@ -300,6 +323,15 @@ with open(''+str(data_name)+'.dat', 'w') as f:
     f.write(';\n\n')
     
     print('solar')
+    
+    f.write('param:' + '\t' + 'SimWave:=' + '\n')
+    wp_gens = df_wave.columns
+    for z in wp_gens:
+        for h in range(0,len(df_wave)):
+            f.write(z + '_WAVE' + '\t' + str(h+1) + '\t' + str(df_wave.loc[h,z]) + '\n')
+    f.write(';\n\n')
+    
+    print('wave')
     
     f.write('param:' + '\t' + 'SimWind:=' + '\n')
     w_gens = df_wind.columns

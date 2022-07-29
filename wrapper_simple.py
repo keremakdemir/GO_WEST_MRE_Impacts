@@ -72,7 +72,12 @@ for day in range(1,days+1):
     #load Solar time series data
         for i in K:
             instance.HorizonSolar[z,i] = instance.SimSolar[z,(day-1)*24+i]
-
+    
+    for z in instance.Wave:
+    #load Wave time series data
+        for i in K:
+            instance.HorizonWave[z,i] = instance.SimWave[z,(day-1)*24+i]
+    
     for z in instance.Wind:
     #load Wind time series data
         for i in K:
@@ -133,6 +138,9 @@ for day in range(1,days+1):
                     elif index[0] in instance.Solar:
                         marginal_cost = 0
                         mwh.append((index[0],'Solar',index[1]+((day-1)*24),varobject[index].value,marginal_cost))
+                    elif index[0] in instance.Wave:
+                        marginal_cost = 0
+                        mwh.append((index[0],'Wave',index[1]+((day-1)*24),varobject[index].value,marginal_cost))    
                     elif index[0] in instance.Wind:
                         marginal_cost = 0
                         mwh.append((index[0],'Wind',index[1]+((day-1)*24),varobject[index].value,marginal_cost))                                            

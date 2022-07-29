@@ -404,6 +404,10 @@ for NN in NODE_NUMBER:
                 df_C.to_csv('nodal_solar.csv',index=None)  
                 copy('nodal_solar.csv',path)
                 
+                ##################################
+                # WAVE POWER ALLOCATION
+                copy('nodal_wave.csv',path)
+                
                 
                 ##############################
                 # THERMAL GENERATION
@@ -693,6 +697,27 @@ for NN in NODE_NUMBER:
                         maxcap = 100000
                         names.append(name)
                         typs.append('solar')
+                        nodes.append(n)
+                        maxcaps.append(maxcap)
+                        mincaps.append(0)
+                        var_oms.append(0)
+                        no_loads.append(0)
+                        st_costs.append(0)
+                        ramps.append(0)
+                        minups.append(0)
+                        mindns.append(0)   
+                        heat_rates.append(0)
+                
+                # wave
+                
+                df_WP = pd.read_csv('nodal_wave.csv',header=0)
+                buses = list(df_WP.columns)
+                for n in buses:
+                    if sum(df_WP[n]) > 0:
+                        name = n + '_WAVE'
+                        maxcap = 100000
+                        names.append(name)
+                        typs.append('wave')
                         nodes.append(n)
                         maxcaps.append(maxcap)
                         mincaps.append(0)

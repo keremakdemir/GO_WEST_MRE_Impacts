@@ -15,11 +15,12 @@ model.Oil = Set()
 model.Gas = Set()
 model.Hydro = Set()
 model.Solar = Set()
+model.Wave = Set()
 model.Wind = Set()
 
 #all generators
 model.Thermal = model.Coal | model.Oil | model.Gas
-model.Generators = model.Thermal | model.Hydro | model.Solar | model.Wind
+model.Generators = model.Thermal | model.Hydro | model.Solar | model.Wave | model.Wind
 model.Dispatchable = model.Hydro | model.Oil | model.Gas | model.Coal
 
 # transmission sets
@@ -116,6 +117,7 @@ model.SimHydro_MAX = Param(model.Hydro, model.SH_periods, within=NonNegativeReal
 model.SimHydro_MIN = Param(model.Hydro, model.SH_periods, within=NonNegativeReals)
 model.SimHydro_TOTAL = Param(model.Hydro, model.SH_periods, within=NonNegativeReals)
 model.SimSolar = Param(model.Solar, model.SH_periods, within=NonNegativeReals)
+model.SimWave = Param(model.Wave, model.SH_periods, within=NonNegativeReals)
 model.SimWind = Param(model.Wind, model.SH_periods, within=NonNegativeReals)
 
 #Variable resources over horizon
@@ -123,6 +125,7 @@ model.HorizonHydro_MAX = Param(model.Hydro,within=NonNegativeReals,mutable=True)
 model.HorizonHydro_MIN = Param(model.Hydro,within=NonNegativeReals,mutable=True)
 model.HorizonHydro_TOTAL = Param(model.Hydro,within=NonNegativeReals,mutable=True)
 model.HorizonSolar = Param(model.Solar,model.hh_periods,within=NonNegativeReals,mutable=True)
+model.HorizonWave = Param(model.Wave,model.hh_periods,within=NonNegativeReals,mutable=True)
 model.HorizonWind = Param(model.Wind,model.hh_periods,within=NonNegativeReals,mutable=True)
 
 #Must run resources
@@ -167,9 +170,10 @@ def SysCost(model):
     hydro_cost = sum(model.mwh[j,i]*0.01 for i in model.hh_periods for j in model.Hydro)
     wind_cost = sum(model.mwh[j,i]*0.01 for i in model.hh_periods for j in model.Wind)
     solar_cost = sum(model.mwh[j,i]*0.01 for i in model.hh_periods for j in model.Solar)
+    wave_cost = sum(model.mwh[j,i]*0.01 for i in model.hh_periods for j in model.Wave)
     exchange_cost = sum(model.Flow[l,i]*model.ExchangeMap[k,l]*model.ExchangeHurdle[k] for l in model.lines for i in model.hh_periods for k in model.exchanges)
 
-    return gen + slack + hydro_cost + wind_cost + solar_cost + exchange_cost
+    return gen + slack + hydro_cost + wind_cost + solar_cost + wave_cost + exchange_cost
 
 model.SystemCost = Objective(rule=SysCost, sense=minimize)
 
@@ -226,6 +230,11 @@ model.HydroMIN= Constraint(model.Hydro,model.hh_periods,rule=HydroM)
 def SolarC(model,j,i): 
     return  model.mwh[j,i] <= model.HorizonSolar[j,i]    
 model.SolarConstraint= Constraint(model.Solar,model.hh_periods,rule=SolarC)
+
+#Max capacity constraints on wave
+def WaveC(model,j,i): 
+    return  model.mwh[j,i] <= model.HorizonWave[j,i]    
+model.WaveConstraint= Constraint(model.Wave,model.hh_periods,rule=WaveC)
 
 #Max capacity constraints on wind
 def WindC(model,j,i): 
