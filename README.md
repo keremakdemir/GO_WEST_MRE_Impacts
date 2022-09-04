@@ -18,7 +18,11 @@ Running GO WECC model includes two main steps:
 3. Results from ASU network reduction algorithm are utilized in “reduced_etwork_data_allocation.py” script to create model files such as generator parameters, available hourly solar and wind power at each node, and hourly demand at each node, etc. This script also creates different folders for each model configuration and populates those with relevant scripts and data to run the model. 
 
 ### Starting the simulation
-In "Simulation_folders", the script named "WECCDataSetup.py" is used to merge all relevant data into "WECC_data.dat" file, which is interpreted by Pyomo. Finally, "wrapper.py" is run to call the optimization solver and start the simulation. For reference, the files in the "Simulation_folders" and their purpose is explained below.
+In "Simulation_folders", the script named "WECCDataSetup.py" is used to merge all relevant data into "WECC_data.dat" file, which is interpreted by Pyomo. Finally, "wrapper.py" is run to call the optimization solver and start the simulation. The process of running GO model is illustrated in the figure below.
+
+![GO_process](https://user-images.githubusercontent.com/56842236/188332543-2323ef78-d98e-433b-8056-35a852b18b9a.png)
+
+For reference, the files in the "Simulation_folders" and their purpose is explained below.
 
 | File Name      | Description |
 | ----------- | ----------- |
@@ -35,6 +39,7 @@ In "Simulation_folders", the script named "WECCDataSetup.py" is used to merge al
 | must_run.csv | Available nodal must-run generation (from nuclear generators) |
 | nodal_load.csv | Hourly electricity demand at each node |
 | nodal_solar.csv | Hourly available solar power generation at each node |
+| nodal_wave.csv | Hourly available wave power generation at each node |
 | nodal_wind.csv | Hourly available wind power generation at each node |
 | WECCDataSetup.py | Python script that creates "WECC_data.dat" file which includes all data above in a format accessible by Pyomo |
 | WECC_LP_coal.py | This is only present if user selects to include only coal power plants in the unit commitment (UC) process. This contains the LP problem formulation of GO WECC model. |
