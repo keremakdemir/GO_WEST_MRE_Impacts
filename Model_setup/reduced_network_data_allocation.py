@@ -552,8 +552,8 @@ for YY in Years:
                     df_thermal["Max_Cap"] = pd.to_numeric(df_thermal["Max_Cap"])
                     df_thermal["Min_Cap"] = pd.to_numeric(df_thermal["Min_Cap"])
                     df_thermal["Heat_Rate"] = pd.to_numeric(df_thermal["Heat_Rate"])
-                    # df_thermal.to_csv('Thermal_gens.csv',index=None)
-                    # copy('Thermal_gens.csv',path)
+                    df_thermal.to_csv('Model_inputs/thermal_gens.csv',index=None)
+                    copy('Model_inputs/thermal_gens.csv',path)
                         
                     
                     ##############################
@@ -649,6 +649,7 @@ for YY in Years:
                     ramps = []
                     minups = []
                     mindns = []
+                    losscaps = []
                     
                     must_nodes = []
                     must_caps = []
@@ -698,6 +699,7 @@ for YY in Years:
                             minups.append(minup)
                             mindns.append(mindn)
                             heat_rates.append(hr_2)
+                            losscaps.append(maxcap)
                             
                         else:
                             
@@ -726,6 +728,7 @@ for YY in Years:
                             minups.append(0)
                             mindns.append(0) 
                             heat_rates.append(0)
+                            losscaps.append(maxcap)
                     
                     # solar
                     
@@ -747,6 +750,7 @@ for YY in Years:
                             minups.append(0)
                             mindns.append(0)   
                             heat_rates.append(0)
+                            losscaps.append(maxcap)
                     
                     # wave
                     
@@ -768,6 +772,7 @@ for YY in Years:
                             minups.append(0)
                             mindns.append(0)   
                             heat_rates.append(0)
+                            losscaps.append(maxcap)
                     
                     # hydro
                     
@@ -789,12 +794,14 @@ for YY in Years:
                             minups.append(0)
                             mindns.append(0)   
                             heat_rates.append(0)
+                            losscaps.append(maxcap)
                     
                     df_genparams = pd.DataFrame()
                     df_genparams['name'] = names
                     df_genparams['typ'] = typs
                     df_genparams['node'] = nodes
                     df_genparams['maxcap'] = maxcaps
+                    df_genparams['losscap'] = maxcaps
                     df_genparams['heat_rate'] = heat_rates
                     df_genparams['mincap'] = mincaps
                     df_genparams['var_om'] = var_oms
@@ -1112,6 +1119,14 @@ for YY in Years:
                     else:          
                         copy(milp,path)
                         copy(lp,path)
+                        
+                    copy('Model_inputs/west_2019_lostcap.csv',path)
+                    #importing a function created in another script to generate a dictionary from the data_genparams file
+                    from dict_creator import dict_funct
+                    df_loss_dict=dict_funct(df_genparams)
+                    #save the dictionary as a .npy file
+                    np.save('Model_inputs/df_dict2.npy', df_loss_dict)
+                    copy('Model_inputs/df_dict2.npy',path)
                     
                 
     
