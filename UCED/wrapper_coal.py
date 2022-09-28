@@ -59,7 +59,7 @@ df_thermal = pd.read_csv('thermal_gens.csv',header=0)
 nucs = df_thermal[df_thermal['Fuel']=='NUC (Nuclear)']
 #df_loss_dict = pd.read_csv('df_dict.csv',header=None,index_col=0)
 df_loss_dict= np.load('df_dict2.npy',allow_pickle='TRUE').item()
-df_losses = pd.read_csv('west_2019_lostcap.csv',header=0,index_col=0)
+df_losses = pd.read_csv('west_2019_lostcap.csv',header=0)
 
 #Line outages
 df_line_outages = pd.read_csv('line_outages.csv',header=0)
@@ -101,7 +101,13 @@ for day in range(1,days+1):
         for i in K:
             instance.HorizonWind[z,i] = instance.SimWind[z,(day-1)*24+i]
             instance2.HorizonWind[z,i] = instance.SimWind[z,(day-1)*24+i]
-            
+    
+    for z in instance.lines:
+    #load line outages and limits time series data
+        for i in K:
+            instance.HorizonLineLimit[z,i] = instance.SimLineLimit[z,(day-1)*24+i]
+            instance2.HorizonLineLimit[z,i] = instance.SimLineLimit[z,(day-1)*24+i]        
+    
     for z in instance.Thermal:
     #load fuel prices for thermal generators
         instance.FuelPrice[z] = instance.SimFuelPrice[z,day]
@@ -194,12 +200,9 @@ for day in range(1,days+1):
     
     #Organizing line outage data
     for z in instance.lines:
-        instance.FlowReducedLim[z] = instance.FlowLim[z]
-        instance2.FlowReducedLim[z] = instance.FlowLim[z]
-    
-    for z in instance.lines:
-        instance.FlowReducedLim[z] = max(0, instance.FlowReducedLim[z].value - df_line_outages.loc[(day-1)*24:(day-1)*24+23,z])
-        instance2.FlowReducedLim[z] = max(0, instance.FlowReducedLim[z].value - df_line_outages.loc[(day-1)*24:(day-1)*24+23,z])
+        for i in K:  
+            instance.HorizonLineLimit[z,i] = max(0, instance.HorizonLineLimit[z,i].value - df_line_outages.loc[(day-1)*24+i,z])
+            instance2.HorizonLineLimit[z,i] = max(0, instance.HorizonLineLimit[z,i].value - df_line_outages.loc[(day-1)*24+i,z])
 
     result = opt.solve(instance,tee=True,symbolic_solver_labels=True, load_solutions=False) ##,tee=True to check number of variables\n",
     instance.solutions.load_from(result)  

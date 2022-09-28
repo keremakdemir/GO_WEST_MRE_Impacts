@@ -39,21 +39,23 @@ NODE_NUMBER = [134]
 UC_TREATMENTS = ['_simple']
 
 # line_limit_MW_scaling = [25,50,75,100]
-line_limit_MW_scaling = [900]
+line_limit_MW_scaling = [2000]
 
 # BA_hurdle_scaling = list(range(0,1050,100))
 BA_hurdle_scaling = [0]
 
 #Line outage selection
 
+# Manual_lines_on_outage = ['line_10093_13504', 'line_70012_14501']
 # From_outage = ['Northern California', 'Oregon']
 # To_outage = ['Central California','Washington']
 # Hours_outage = [[*pd.date_range(start='1-1-2019 00:00:00',end='12-31-2019 23:00:00', freq='H')],[*pd.date_range(start='1-1-2019 00:00:00',end='12-31-2019 23:00:00', freq='H')]]
-# Percent_line_capacity_outage = [80,20] 
+# Percent_line_capacity_outage = [100,20] 
 
-From_outage = ['Northern California'] #region or BA name
-To_outage = ['Central California'] #region or BA name
-Hours_outage = [[*pd.date_range(start='1-1-2019 12:00:00',end='1-2-2019 20:00:00', freq='H')]] #starts from 1 and goes until 8760
+Manual_lines_on_outage = ['line_25289_40006']
+From_outage = [] #region or BA name
+To_outage = [] #region or BA name
+Hours_outage = [[*pd.date_range(start='1-1-2019 00:00:00',end='12-31-2019 23:00:00', freq='H')]] #starts from 1 and goes until 8760
 Percent_line_capacity_outage = [100] #this is the percentage of line capacity on outage, if line is totally on outage, write 100, if 20% of line is damaged, write 20
 
 for YY in Years:
@@ -1004,65 +1006,98 @@ for YY in Years:
                     df_line_params['line'] = lines
                     df_line_params['reactance'] = reactance
                     df_line_params['limit'] = limit 
-                    df_line_params['line_limit_remaining'] = limit
                     df_line_params.to_csv('Model_inputs/line_params.csv',index=None)
                     copy('Model_inputs/line_params.csv',path)
                     
+                    #Creating hourly line limit dataframe
+                    line_limit_df = pd.DataFrame(np.zeros((8760,len(lines))),columns=lines,index=hours_2019)
+                    for my_line in lines:
+                        line_limit_df.loc[:,my_line] = round(df_line_params.loc[df_line_params['line']==my_line]['limit'].values[0])
+                        line_limit_df[my_line] = pd.to_numeric(line_limit_df[my_line], downcast='integer')
+                    
+                    line_limit_df.to_csv('Model_inputs/line_limits.csv',index=None)
+                    copy('Model_inputs/line_limits.csv',path)
                     
                     #Creating line outage timeseries
                     line_outages_df = pd.DataFrame(np.zeros((8760,len(lines))),columns=lines,index=hours_2019)
-                    
                     all_nodal_info = pd.read_csv('../Data_setup/10k_topology_files/nodes_to_BA_state.csv',header=0,index_col=0)
-                    total_outage_count = len(From_outage)
+                    total_outage_count_area = len(From_outage)
+                    total_outage_count_line = len(Manual_lines_on_outage)
                     
-                    for no in range(0,total_outage_count):
+                    if total_outage_count_area > 0:
                         
-                        selected_from_reg = From_outage[no]
-                        selected_to_reg = To_outage[no]
-                        selected_hours = Hours_outage[no]
-                        selected_line_loss = Percent_line_capacity_outage[no]
+                        for no in range(0,total_outage_count_area):
+                            
+                            selected_from_reg = From_outage[no]
+                            selected_to_reg = To_outage[no]
+                            selected_hours = Hours_outage[no]
+                            selected_line_loss = Percent_line_capacity_outage[no]
+                            
+                            if selected_from_reg in all_area_names:
+                                from_nodes_all = [*all_nodal_info.loc[all_nodal_info['Area Name']==selected_from_reg]['Number']]
+                                
+                                if selected_to_reg in all_area_names:
+                                    to_nodes_all = [*all_nodal_info.loc[all_nodal_info['Area Name']==selected_to_reg]['Number']]
+                                    
+                                elif selected_to_reg in all_BA_names:
+                                    to_nodes_all = [*all_nodal_info.loc[all_nodal_info['NAME']==selected_to_reg]['Number']]
+                                    
+                                
+                            elif selected_from_reg in all_BA_names:
+                                from_nodes_all = [*all_nodal_info.loc[all_nodal_info['NAME']==selected_from_reg]['Number']]
+                                
+                                if selected_to_reg in all_area_names:
+                                    to_nodes_all = [*all_nodal_info.loc[all_nodal_info['Area Name']==selected_to_reg]['Number']]
+                                    
+                                elif selected_to_reg in all_BA_names:
+                                    to_nodes_all = [*all_nodal_info.loc[all_nodal_info['NAME']==selected_to_reg]['Number']]
+                                    
+                            all_line_name_combinations = []
+                            
+                            for i in from_nodes_all:
+                                
+                                for j in to_nodes_all:
+                                
+                                    my_line_name_1 = 'line_{}_{}'.format(i,j)
+                                    all_line_name_combinations.append(my_line_name_1)
+                            
+                                    my_line_name_2 = 'line_{}_{}'.format(j,i)
+                                    all_line_name_combinations.append(my_line_name_2)
+                                    
+                            selected_outage_lines_list = list(set(all_line_name_combinations) & set(lines))
+                            
+                            for my_line in selected_outage_lines_list:
+                                
+                                my_line_cap_outage = df_line_params.loc[df_line_params['line']==my_line]['limit'].values[0]*(selected_line_loss/100)
+                                line_outages_df.loc[selected_hours,my_line] = round(my_line_cap_outage)
                         
-                        if selected_from_reg in all_area_names:
-                            from_nodes_all = [*all_nodal_info.loc[all_nodal_info['Area Name']==selected_from_reg]['Number']]
-                            
-                            if selected_to_reg in all_area_names:
-                                to_nodes_all = [*all_nodal_info.loc[all_nodal_info['Area Name']==selected_to_reg]['Number']]
-                                
-                            elif selected_to_reg in all_BA_names:
-                                to_nodes_all = [*all_nodal_info.loc[all_nodal_info['NAME']==selected_to_reg]['Number']]
-                                
-                            
-                        elif selected_from_reg in all_BA_names:
-                            from_nodes_all = [*all_nodal_info.loc[all_nodal_info['NAME']==selected_from_reg]['Number']]
-                            
-                            if selected_to_reg in all_area_names:
-                                to_nodes_all = [*all_nodal_info.loc[all_nodal_info['Area Name']==selected_to_reg]['Number']]
-                                
-                            elif selected_to_reg in all_BA_names:
-                                to_nodes_all = [*all_nodal_info.loc[all_nodal_info['NAME']==selected_to_reg]['Number']]
-                                
-                        all_line_name_combinations = []
-                        
-                        for i in from_nodes_all:
-                            
-                            for j in to_nodes_all:
-                            
-                                my_line_name_1 = 'line_{}_{}'.format(i,j)
-                                all_line_name_combinations.append(my_line_name_1)
-                        
-                                my_line_name_2 = 'line_{}_{}'.format(j,i)
-                                all_line_name_combinations.append(my_line_name_2)
-                                
-                        selected_outage_lines_list = list(set(all_line_name_combinations) & set(lines))
-                        
-                        for my_line in selected_outage_lines_list:
-                            
-                            my_line_cap_outage = df_line_params.loc[df_line_params['line']==my_line]['limit'].values[0]*(selected_line_loss/100)
-                            line_outages_df.loc[selected_hours,my_line] = my_line_cap_outage
+                        for my_line in lines:
+                            line_outages_df[my_line] = pd.to_numeric(line_outages_df[my_line], downcast='integer')
+                        line_outages_df.to_csv('Model_inputs/line_outages.csv',index=None)
+                        copy('Model_inputs/line_outages.csv',path)    
                     
-                    line_outages_df.to_csv('Model_inputs/line_outages.csv',index=None)
-                    copy('Model_inputs/line_outages.csv',path)    
+                    elif total_outage_count_line > 0:
+                        
+                        for no in range(0,total_outage_count_line):
                             
+                            my_selected_outage_line = Manual_lines_on_outage[no]
+                            selected_hours = Hours_outage[no]
+                            selected_line_loss = Percent_line_capacity_outage[no]
+                            
+                            my_line_cap_outage = df_line_params.loc[df_line_params['line']==my_selected_outage_line]['limit'].values[0]*(selected_line_loss/100)
+                            line_outages_df.loc[selected_hours,my_selected_outage_line] = round(my_line_cap_outage)
+                            
+                        for my_line in lines:
+                            line_outages_df[my_line] = pd.to_numeric(line_outages_df[my_line], downcast='integer')
+                        line_outages_df.to_csv('Model_inputs/line_outages.csv',index=None)
+                        copy('Model_inputs/line_outages.csv',path)    
+                        
+                    else:
+                        for my_line in lines:
+                            line_outages_df[my_line] = pd.to_numeric(line_outages_df[my_line], downcast='integer')
+                        line_outages_df.to_csv('Model_inputs/line_outages.csv',index=None)
+                        copy('Model_inputs/line_outages.csv',path)    
+
                     
                     #Creating BA to BA transmission matrix for individual lines
                     exchange_columns = ['Exchange'] + lines

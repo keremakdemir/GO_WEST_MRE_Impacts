@@ -30,6 +30,7 @@ df_gen = pd.read_csv('data_genparams.csv',header=0)
 df_bustounitmap = pd.read_csv('gen_mat.csv',header=0)
 df_linetobusmap = pd.read_csv('line_to_bus.csv',header=0)
 df_line_params = pd.read_csv('line_params.csv',header=0)
+df_line_limits = pd.read_csv('line_limits.csv',header=0)
 lines = list(df_line_params['line'])
 
 ##daily ts of hydro at nodal-level
@@ -313,10 +314,10 @@ with open(''+str(data_name)+'.dat', 'w') as f:
 ######=================================================########
 
 ####### create parameter matrix for transmission paths (source and sink connections)
-    f.write('param:' + '\t' + 'FlowLim' + '\t' +'Reactance' + '\t' +'FlowReducedLim :=' + '\n')
+    f.write('param:' + '\t' + 'FlowLim' + '\t' +'Reactance :=' + '\n')
     for z in lines:
         idx = lines.index(z)
-        f.write(z + '\t' + str(df_line_params.loc[idx,'limit']) + '\t' + str(df_line_params.loc[idx,'reactance']) + '\t' + str(df_line_params.loc[idx,'line_limit_remaining']) + '\n')
+        f.write(z + '\t' + str(df_line_params.loc[idx,'limit']) + '\t' + str(df_line_params.loc[idx,'reactance']) + '\n')
     f.write(';\n\n')
 
     print('trans paths')
@@ -326,6 +327,13 @@ with open(''+str(data_name)+'.dat', 'w') as f:
     for z in all_BA_BA_connections:
         idx = all_BA_BA_connections.index(z)
         f.write(z + '\t' + str(BA_to_BA_hurdle_data.loc[idx,'Hurdle_$/MWh']) + '\n')
+    f.write(';\n\n')
+    
+    #Hourly line capacity
+    f.write('param:' + '\t' + 'SimLineLimit:=' + '\n')
+    for z in lines:
+        for h in range(0,len(df_line_limits)):
+            f.write(z + '\t' + str(h+1) + '\t' + str(df_line_limits.loc[h,z]) + '\n')
     f.write(';\n\n')
     
     

@@ -95,7 +95,6 @@ model.mindn = Param(model.Generators)
 #transmission parameters
 model.Reactance = Param(model.lines)
 model.FlowLim = Param(model.lines)
-model.FlowReducedLim = Param(model.lines,mutable=True)
 model.LinetoBusMap=Param(model.lines,model.buses)
 model.BustoUnitMap=Param(model.Generators,model.buses)
 model.ExchangeHurdle=Param(model.exchanges)
@@ -149,6 +148,7 @@ model.SimHydro_TOTAL = Param(model.Hydro, model.SH_periods, within=NonNegativeRe
 model.SimSolar = Param(model.Solar, model.SH_periods, within=NonNegativeReals)
 model.SimWave = Param(model.Wave, model.SH_periods, within=NonNegativeReals)
 model.SimWind = Param(model.Wind, model.SH_periods, within=NonNegativeReals)
+model.SimLineLimit = Param(model.lines,model.SH_periods, within=NonNegativeReals)
 
 #Variable resources over horizon
 model.HorizonHydro_MAX = Param(model.Hydro,within=NonNegativeReals,mutable=True)
@@ -157,6 +157,7 @@ model.HorizonHydro_TOTAL = Param(model.Hydro,within=NonNegativeReals,mutable=Tru
 model.HorizonSolar = Param(model.Solar,model.hh_periods,within=NonNegativeReals,mutable=True)
 model.HorizonWave = Param(model.Wave,model.hh_periods,within=NonNegativeReals,mutable=True)
 model.HorizonWind = Param(model.Wind,model.hh_periods,within=NonNegativeReals,mutable=True)
+model.HorizonLineLimit = Param(model.lines,model.hh_periods, within=NonNegativeReals,mutable=True)
 
 #Must run resources
 model.Must = Param(model.buses,within=NonNegativeReals)
@@ -315,11 +316,11 @@ def Theta_bus(model,i):
 model.ThetaB_Constraint = Constraint(model.hh_periods,rule=Theta_bus)
 
 def FlowUP_line(model,l,i):
-    return  model.Flow[l,i] <= model.FlowReducedLim[l]
+    return  model.Flow[l,i] <= model.HorizonLineLimit[l,i]
 model.FlowU_Constraint = Constraint(model.lines,model.hh_periods,rule=FlowUP_line)
 
 def FlowLow_line(model,l,i):
-    return  -1*model.Flow[l,i] <= model.FlowReducedLim[l]
+    return  -1*model.Flow[l,i] <= model.HorizonLineLimit[l,i]
 model.FlowLL_Constraint = Constraint(model.lines,model.hh_periods,rule=FlowLow_line)
 
 ######=================================================########
