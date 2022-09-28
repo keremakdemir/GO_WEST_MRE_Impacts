@@ -52,11 +52,11 @@ BA_hurdle_scaling = [0]
 # Hours_outage = [[*pd.date_range(start='1-1-2019 00:00:00',end='12-31-2019 23:00:00', freq='H')],[*pd.date_range(start='1-1-2019 00:00:00',end='12-31-2019 23:00:00', freq='H')]]
 # Percent_line_capacity_outage = [100,20] 
 
-Manual_lines_on_outage = ['line_25289_40006']
+Manual_lines_on_outage = [] #specific line names
 From_outage = [] #region or BA name
 To_outage = [] #region or BA name
-Hours_outage = [[*pd.date_range(start='1-1-2019 00:00:00',end='12-31-2019 23:00:00', freq='H')]] #starts from 1 and goes until 8760
-Percent_line_capacity_outage = [100] #this is the percentage of line capacity on outage, if line is totally on outage, write 100, if 20% of line is damaged, write 20
+Hours_outage = [] #starts from 1 and goes until 8760
+Percent_line_capacity_outage = [] #this is the percentage of line capacity on outage, if line is totally on outage, write 100, if 20% of line is damaged, write 20
 
 for YY in Years:
     
