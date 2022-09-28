@@ -313,10 +313,10 @@ with open(''+str(data_name)+'.dat', 'w') as f:
 ######=================================================########
 
 ####### create parameter matrix for transmission paths (source and sink connections)
-    f.write('param:' + '\t' + 'FlowLim' + '\t' +'Reactance :=' + '\n')
+    f.write('param:' + '\t' + 'FlowLim' + '\t' +'Reactance' + '\t' +'FlowReducedLim :=' + '\n')
     for z in lines:
         idx = lines.index(z)
-        f.write(z + '\t' + str(df_line_params.loc[idx,'limit']) + '\t' + str(df_line_params.loc[idx,'reactance']) + '\n')
+        f.write(z + '\t' + str(df_line_params.loc[idx,'limit']) + '\t' + str(df_line_params.loc[idx,'reactance']) + '\t' + str(df_line_params.loc[idx,'line_limit_remaining']) + '\n')
     f.write(';\n\n')
 
     print('trans paths')

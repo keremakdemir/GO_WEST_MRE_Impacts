@@ -95,6 +95,7 @@ model.mindn = Param(model.Generators)
 #transmission parameters
 model.Reactance = Param(model.lines)
 model.FlowLim = Param(model.lines)
+model.FlowReducedLim = Param(model.lines,mutable=True)
 model.LinetoBusMap=Param(model.lines,model.buses)
 model.BustoUnitMap=Param(model.Generators,model.buses)
 model.ExchangeHurdle=Param(model.exchanges)
@@ -296,11 +297,11 @@ def Theta_bus(model,i):
 model.ThetaB_Constraint = Constraint(model.hh_periods,rule=Theta_bus)
 
 def FlowUP_line(model,l,i):
-    return  model.Flow[l,i] <= model.FlowLim[l]
+    return  model.Flow[l,i] <= model.FlowReducedLim[l]
 model.FlowU_Constraint = Constraint(model.lines,model.hh_periods,rule=FlowUP_line)
 
 def FlowLow_line(model,l,i):
-    return  -1*model.Flow[l,i] <= model.FlowLim[l]
+    return  -1*model.Flow[l,i] <= model.FlowReducedLim[l]
 model.FlowLL_Constraint = Constraint(model.lines,model.hh_periods,rule=FlowLow_line)
 
 ######=================================================########

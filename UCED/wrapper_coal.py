@@ -58,8 +58,11 @@ df_generators = pd.read_csv('data_genparams.csv',header=0)
 df_thermal = pd.read_csv('thermal_gens.csv',header=0)
 nucs = df_thermal[df_thermal['Fuel']=='NUC (Nuclear)']
 #df_loss_dict = pd.read_csv('df_dict.csv',header=None,index_col=0)
-df_loss_dict=df_dict= np.load('df_dict2.npy',allow_pickle='TRUE').item()
+df_loss_dict= np.load('df_dict2.npy',allow_pickle='TRUE').item()
 df_losses = pd.read_csv('west_2019_lostcap.csv',header=0,index_col=0)
+
+#Line outages
+df_line_outages = pd.read_csv('line_outages.csv',header=0)
 
 #max here can be (1,365)
 for day in range(1,days+1):
@@ -189,6 +192,15 @@ for day in range(1,days+1):
         instance2.Must_loss[z] = max(0,instance.Must[z] - np.mean(df_losses.loc[(day-1)*24:(day-1)*24+23,'Nuclear_ovr_1000'])/len(nucs))        
     
     
+    #Organizing line outage data
+    for z in instance.lines:
+        instance.FlowReducedLim[z] = instance.FlowLim[z]
+        instance2.FlowReducedLim[z] = instance.FlowLim[z]
+    
+    for z in instance.lines:
+        instance.FlowReducedLim[z] = max(0, instance.FlowReducedLim[z].value - df_line_outages.loc[(day-1)*24:(day-1)*24+23,z])
+        instance2.FlowReducedLim[z] = max(0, instance.FlowReducedLim[z].value - df_line_outages.loc[(day-1)*24:(day-1)*24+23,z])
+
     result = opt.solve(instance,tee=True,symbolic_solver_labels=True, load_solutions=False) ##,tee=True to check number of variables\n",
     instance.solutions.load_from(result)  
     
