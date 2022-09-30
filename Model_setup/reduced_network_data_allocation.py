@@ -668,7 +668,6 @@ for YY in Years:
                     ramps = []
                     minups = []
                     mindns = []
-                    losscaps = []
                     
                     must_nodes = []
                     must_caps = []
@@ -718,7 +717,6 @@ for YY in Years:
                             minups.append(minup)
                             mindns.append(mindn)
                             heat_rates.append(hr_2)
-                            losscaps.append(maxcap)
                             
                         else:
                             
@@ -747,7 +745,6 @@ for YY in Years:
                             minups.append(0)
                             mindns.append(0) 
                             heat_rates.append(0)
-                            losscaps.append(maxcap)
                     
                     # solar
                     
@@ -769,7 +766,6 @@ for YY in Years:
                             minups.append(0)
                             mindns.append(0)   
                             heat_rates.append(0)
-                            losscaps.append(maxcap)
                     
                     # wave
                     
@@ -791,7 +787,6 @@ for YY in Years:
                             minups.append(0)
                             mindns.append(0)   
                             heat_rates.append(0)
-                            losscaps.append(maxcap)
                     
                     # hydro
                     
@@ -813,14 +808,12 @@ for YY in Years:
                             minups.append(0)
                             mindns.append(0)   
                             heat_rates.append(0)
-                            losscaps.append(maxcap)
                     
                     df_genparams = pd.DataFrame()
                     df_genparams['name'] = names
                     df_genparams['typ'] = typs
                     df_genparams['node'] = nodes
                     df_genparams['maxcap'] = maxcaps
-                    df_genparams['losscap'] = maxcaps
                     df_genparams['heat_rate'] = heat_rates
                     df_genparams['mincap'] = mincaps
                     df_genparams['var_om'] = var_oms
@@ -839,8 +832,6 @@ for YY in Years:
                         df_must[n] = [must_caps[i]]
                     df_must.to_csv('Model_inputs/must_run.csv',index=None)
                     copy('Model_inputs/must_run.csv',path)
-                    
-                    
                     
                     ######
                     # create gen-to-bus matrix
@@ -1008,15 +999,6 @@ for YY in Years:
                     df_line_params['limit'] = limit 
                     df_line_params.to_csv('Model_inputs/line_params.csv',index=None)
                     copy('Model_inputs/line_params.csv',path)
-                    
-                    #Creating hourly line limit dataframe
-                    line_limit_df = pd.DataFrame(np.zeros((8760,len(lines))),columns=lines,index=hours_2019)
-                    for my_line in lines:
-                        line_limit_df.loc[:,my_line] = round(df_line_params.loc[df_line_params['line']==my_line]['limit'].values[0])
-                        line_limit_df[my_line] = pd.to_numeric(line_limit_df[my_line], downcast='integer')
-                    
-                    line_limit_df.to_csv('Model_inputs/line_limits.csv',index=None)
-                    copy('Model_inputs/line_limits.csv',path)
                     
                     #Creating line outage timeseries
                     line_outages_df = pd.DataFrame(np.zeros((8760,len(lines))),columns=lines,index=hours_2019)
