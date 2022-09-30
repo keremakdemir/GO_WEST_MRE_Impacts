@@ -29,11 +29,13 @@ For reference, the files in the "Simulation_folders" and their purpose is explai
 | BA_to_BA_hurdle_scaled.csv | Scaled hurdle rates between BAs |
 | BA_to_BA_transmission_matrix.csv   | Binary file showing which lines are connected to which BAs |
 | data_genparams.csv | Names and parameters of generators |
+| df_dict2.npy | Generator capacity categories and names for outage modeling |
 | Fuel_prices.csv | Daily coal and natural gas prices identified for each generator |
 | gen_mat.csv | Binary file showing which generators are connected to which buses |
 | Hydro_max.csv | Maximum hourly hydropower availability at each node |
 | Hydro_min.csv | Minimum hourly hydropower availability at each node |
 | Hydro_total.csv | Daily total hydropower availability at each node |
+| line_outages.csv | Hourly capacity on outage for each line |
 | line_params.csv | Scaled hurdle rates between BAs |
 | line_to_bus.csv | Binary file showing which lines are connected to which buses |
 | must_run.csv | Available nodal must-run generation (from nuclear generators) |
@@ -41,6 +43,8 @@ For reference, the files in the "Simulation_folders" and their purpose is explai
 | nodal_solar.csv | Hourly available solar power generation at each node |
 | nodal_wave.csv | Hourly available wave power generation at each node |
 | nodal_wind.csv | Hourly available wind power generation at each node |
+| thermal_gens.csv | Names and parameters of just thermal generators |
+| west_YYYY_lostcap.csv | Hourly capacity on outage for each generator capacity categories |
 | WECCDataSetup.py | Python script that creates "WECC_data.dat" file which includes all data above in a format accessible by Pyomo |
 | WECC_LP_coal.py | This is only present if user selects to include only coal power plants in the unit commitment (UC) process. This contains the LP problem formulation of GO WEST model. |
 | WECC_LP_coal_gas.py | This is only present if user selects to include both natural gas and coal power plants in the unit commitment (UC) process. This contains the LP problem formulation of GO WEST model. |
