@@ -92,9 +92,9 @@ for YY in Years:
                         BA_hurd_new = BA_hurd/100
                         
                         #reading congested and uncongested lines
-                        congested = pd.read_csv('Selected_lines/lines_congested_{}{}_{}.csv'.format(NN,UC,YY),header=0)
+                        congested = pd.read_csv('Selected_lines/lines_congested.csv',header=0)
                         congested = list(congested['Lines'])
-                        uncongested = pd.read_csv('Selected_lines/lines_notcongested_{}{}_{}.csv'.format(NN,UC,YY),header=0)
+                        uncongested = pd.read_csv('Selected_lines/lines_notcongested.csv',header=0)
                         uncongested = list(uncongested['Lines'])
                         
                         FN = 'Selected_nodes/Results_Excluded_Nodes_' + str(NN) + '.xlsx'
