@@ -45,8 +45,8 @@ UC_TREATMENTS = ['_simple']
 # line_limit_MW_scaling = [25,50,75,100]
 # line_limit_MW_scaling = [2000]
 
-not_congested_line_scaling = [*range(0,300,50)]
-congested_line_scaling = [*range(50,1050,50)]
+not_congested_line_scaling = [0]
+congested_line_scaling = [0]
 
 # BA_hurdle_scaling = list(range(0,1050,100))
 BA_hurdle_scaling = [0]
@@ -86,13 +86,13 @@ for YY in Years:
                         
                         for WP in Wave_power_penetration:
             
-                            path=str(Path.cwd().parent) + str(Path('/UCED/Simulation_folders/Exp' + str(NN) + UC + '_' + str(T_p) + '_' + str(L_s) + '_' + str(BA_hurd)  + '_' + str(YY) + '_' + str(WP)))
+                            path=str(Path.cwd().parent) + str(Path('/UCED/Simulation_folders/Exp' + str(NN) + UC + '_' + str(T_p) + '_' + str(L_s) + '_' + str(BA_hurd) + '_' + str(WP) + '_' + str(YY)))
                             os.makedirs(path,exist_ok=True)
                             
-                            path_2=str(Path.cwd().parent) + str(Path('/UCED/Simulation_folders/Exp' + str(NN) + UC + '_' + str(T_p) + '_' + str(L_s) + '_' + str(BA_hurd) + '_' + str(YY) + '_' + str(WP))) + str(Path('/Inputs'))
+                            path_2=str(Path.cwd().parent) + str(Path('/UCED/Simulation_folders/Exp' + str(NN) + UC + '_' + str(T_p) + '_' + str(L_s) + '_' + str(BA_hurd) + '_' + str(WP) + '_' + str(YY))) + str(Path('/Inputs'))
                             os.makedirs(path_2,exist_ok=True)
                             
-                            path_3=str(Path.cwd().parent) + str(Path('/UCED/Simulation_folders/Exp' + str(NN) + UC + '_' + str(T_p) + '_' + str(L_s) + '_' + str(BA_hurd) + '_' + str(YY) + '_' + str(WP))) + str(Path('/Outputs'))
+                            path_3=str(Path.cwd().parent) + str(Path('/UCED/Simulation_folders/Exp' + str(NN) + UC + '_' + str(T_p) + '_' + str(L_s) + '_' + str(BA_hurd) + '_' + str(WP) + '_' + str(YY))) + str(Path('/Outputs'))
                             os.makedirs(path_3,exist_ok=True)
                             
                             T_p_new = T_p
