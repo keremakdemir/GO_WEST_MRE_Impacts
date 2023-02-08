@@ -457,7 +457,7 @@ for YY in Years:
                             # WAVE POWER ALLOCATION
                             
                             #Read wave nodal wave power profiles
-                            wave_profiles = pd.read_excel(f'../Data_setup/Time_series_data/Wave_generation/wave_generation_profiles_{YY}.xlsx',header=0)
+                            wave_profiles = pd.read_csv(f'../Data_setup/Time_series_data/Wave_generation/wave_generation_profiles_{YY}.csv',header=0)
                             wave_profiles = wave_profiles*WP
                             
                             #Saving the data
