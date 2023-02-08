@@ -30,8 +30,8 @@ BA_to_BA_hurdle_data = pd.read_csv('../Data_setup/BA_to_BA_data/BA_to_BA_hurdle.
 all_BA_BA_connections = list(BA_to_BA_hurdle_data['BA_to_BA'])
 
 #Defining hourly index
-hours = pd.date_range(start='01-01-2010 00:00:00', end='12-31-2010 23:00:00', freq='3H')
-all_hours = pd.date_range(start='01-01-2010 00:00:00', end='12-31-2010 23:00:00', freq='H')
+hours = pd.date_range(start='01-01-2019 00:00:00', end='12-31-2019 23:00:00', freq='3H')
+all_hours = pd.date_range(start='01-01-2019 00:00:00', end='12-31-2019 23:00:00', freq='H')
 
 # Years = [2019,2020,2021]
 Years = [2019]
