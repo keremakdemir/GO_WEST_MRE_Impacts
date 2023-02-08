@@ -457,17 +457,12 @@ for YY in Years:
                             # WAVE POWER ALLOCATION
                             
                             #Read wave nodal wave power profiles
-                            wave_profiles = pd.read_excel('../Data_setup/Time_series_data/Wave_generation/Wave_nodal_initial.xlsx',header=0)
-                            wave_profiles.index = hours
-                            
+                            wave_profiles = pd.read_excel(f'../Data_setup/Time_series_data/Wave_generation/wave_generation_profiles_{YY}.xlsx',header=0)
                             wave_profiles = wave_profiles*WP
-                            wave_profiles = wave_profiles.reindex(all_hours)
                             
-                            #Interpolating and saving the data
-                            final_wave_data = wave_profiles.interpolate(method='linear', limit_direction='both')
-                            final_wave_data.to_csv('Model_inputs/nodal_wave.csv',index=False)
+                            #Saving the data
+                            wave_profiles.to_csv('Model_inputs/nodal_wave.csv',index=False)
                             copy('Model_inputs/nodal_wave.csv',path+str(Path('/Inputs')))
-                            
                             
                             ##############################
                             # THERMAL GENERATION
