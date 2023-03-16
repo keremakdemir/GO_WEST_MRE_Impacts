@@ -14,13 +14,12 @@ import geopandas as gpd
 from shapely.geometry import Point, Polygon
 from matplotlib.colors import TwoSlopeNorm
 
-
-RTS = [68] #total number of nodes
-MRE = 10 #MRE number of nodes
-INS = 10 #Inland state number of nodes
-# RTS = [300,275,250,225,200,175,150,125,100,75]
-distance_threshold = 30
-distance_threshold2 = 80
+###User defined variables###
+RTS = [68] #Number of nodes to retain (can be a single number or series of numbers to create different topologies automatically)
+MRE = 10 # Number of MRE nodes
+distance_threshold = 30 #Distance threshold in km, restricts algorithm to select any two nodes that are closer than this number (this is used when selecting a single node in each BA)
+distance_threshold2 = 80 #Distance threshold in km, restricts algorithm to select any two nodes that are closer than this number (this is used after we selected a single node in each BA)
+############################
 
 df_BAs = pd.read_csv('../Data_setup/Time_series_data/BA_data/BAs.csv',header=0)
 BAs = list(df_BAs['Name'])

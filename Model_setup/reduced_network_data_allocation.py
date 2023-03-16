@@ -33,28 +33,25 @@ all_BA_BA_connections = list(BA_to_BA_hurdle_data['BA_to_BA'])
 hours = pd.date_range(start='01-01-2019 00:00:00', end='12-31-2019 23:00:00', freq='3H')
 all_hours = pd.date_range(start='01-01-2019 00:00:00', end='12-31-2019 23:00:00', freq='H')
 
+###User defined variables###
 # Years = [2019,2020,2021]
-Years = [2019]
+Years = [2019] #Years to be simulated
 
 # NODE_NUMBER = [75,100,125,150,175,200,225,250,275,300]
-NODE_NUMBER = [134]
+NODE_NUMBER = [134] #Number of nodes to be simulated (can be more than one to create job folders automatically)
 
 # UC_TREATMENTS = ['_simple','_coal','_coal_gas']
-UC_TREATMENTS = ['_simple']
+UC_TREATMENTS = ['_simple'] #Defining mathematical formulation (LP vs MILP for only coal vs MILP for coal and natural gas)
 
-# line_limit_MW_scaling = [25,50,75,100]
-# line_limit_MW_scaling = [2000]
-
-not_congested_line_scaling = [0]
-congested_line_scaling = [0]
+not_congested_line_scaling = [0] #Transmission line limit scaling factor that is added to noncongested lines in MW
+congested_line_scaling = [0] #Transmission line limit scaling factor that is added to congested lines in MW
 
 # BA_hurdle_scaling = list(range(0,1050,100))
-BA_hurdle_scaling = [0]
+BA_hurdle_scaling = [0] #Hurdle rate scaling factor that scales hurdle rates by %
 
 Wave_power_penetration = [0] #Installed wave power capacity at each MRE node
 
 #Line outage selection
-
 # Manual_lines_on_outage = ['line_10093_13504', 'line_70012_14501']
 # From_outage = ['Northern California', 'Oregon']
 # To_outage = ['Central California','Washington']
@@ -64,8 +61,9 @@ Wave_power_penetration = [0] #Installed wave power capacity at each MRE node
 Manual_lines_on_outage = [] #specific line names
 From_outage = [] #region or BA name
 To_outage = [] #region or BA name
-Hours_outage = [] #starts from 1 and goes until 8760
+Hours_outage = [] #time ranges for the outage events
 Percent_line_capacity_outage = [] #this is the percentage of line capacity on outage, if line is totally on outage, write 100, if 20% of line is damaged, write 20
+############################
 
 for YY in Years:
     
